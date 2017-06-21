@@ -8,6 +8,7 @@ from tensorflow_serving.apis import predict_pb2, prediction_service_pb2
 import numpy as np
 
 from kolasimagesearch.impl.feature_engine.feature_extractor import FeatureExtractor, Descriptor
+from kolasimagestorage.image_encoder import ImageEncoder
 
 
 class TensorflowProxy(object):
@@ -15,16 +16,13 @@ class TensorflowProxy(object):
         return Descriptor([0])
 
 
-def encode_image(image):
-    return image
-
-
 class TFFeatureExtractor(FeatureExtractor):
     def __init__(self, *args, **kwargs):
         self.tensorflow_proxy = TensorflowProxy()
+        self.image_encoder = ImageEncoder(image_format="jpeg")
 
     def calculate(self, image: np.ndarray) -> Descriptor:
-        image_encoded = encode_image(image)
+        image_encoded = self.image_encoder.numpy_to_binary(image)
         feature_vector = self.tensorflow_proxy.get_desctiptor(image_encoded)
         return Descriptor(feature_vector)
 
