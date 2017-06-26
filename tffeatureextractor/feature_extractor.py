@@ -39,7 +39,8 @@ class TFConnection:
         request.model_spec.name = 'inception'
         request.model_spec.signature_name = 'predict_images'
         request.inputs['images'].CopyFrom(tf.contrib.util.make_tensor_proto(bin_image, shape=[1]))
-        return self.stub.Predict(request, self.timeout)
+        response = self.stub.Predict(request, self.timeout)
+        return response
 
 
 def main():
