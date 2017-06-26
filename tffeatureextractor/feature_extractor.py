@@ -37,9 +37,15 @@ class TFConnection:
     def predict(self, bin_image):
         request = predict_pb2.PredictRequest()
         request.model_spec.name = 'inception'
-        request.model_spec.signature_name = 'predict_images'
+        request.model_spec.signature_name = 'predict_images2'
         request.inputs['images'].CopyFrom(tf.contrib.util.make_tensor_proto(bin_image, shape=[1]))
         response = self.stub.Predict(request, self.timeout)
+
+        res1 = tf.contrib.util.make_ndarray(response.outputs["res1"])
+        res2 = tf.contrib.util.make_ndarray(response.outputs["res2"])
+
+        print(res1.shape, res2.shape)
+
         return response
 
 

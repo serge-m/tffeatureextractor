@@ -71,7 +71,7 @@ def export():
         images = tf.map_fn(preprocess_image, jpegs, dtype=tf.float32)
 
         # Run inference.
-        logits, _ = inception_model.inference(images, NUM_CLASSES + 1)
+        logits, _, endpoints = inception_model.inference(images, NUM_CLASSES + 1)
 
         # Transform output to topK result.
         values, indices = tf.nn.top_k(logits, NUM_TOP_CLASSES)
@@ -91,7 +91,7 @@ def export():
             print('Exporting trained model to', output_path)
             builder = saved_model_builder.SavedModelBuilder(output_path)
 
-            signature_def_map = get_signature_def_map(classes, jpegs, serialized_tf_example, values)
+            signature_def_map = get_signature_def_map(classes, jpegs, serialized_tf_example, values, endpoints)
             legacy_init_op = tf.group(tf.tables_initializer(), name='legacy_init_op')
 
             builder.add_meta_graph_and_variables(
@@ -103,7 +103,7 @@ def export():
             print('Successfully exported model to %s' % FLAGS.output_dir)
 
 
-def get_signature_def_map(classes, jpegs, serialized_tf_example, values):
+def get_signature_def_map(classes, jpegs, serialized_tf_example, values, endpoints):
     # Build the signature_def_map.
     classes_output_tensor_info = utils.build_tensor_info(classes)
     scores_output_tensor_info = utils.build_tensor_info(values)
@@ -111,8 +111,12 @@ def get_signature_def_map(classes, jpegs, serialized_tf_example, values):
                                                             scores_output_tensor_info, serialized_tf_example)
     prediction_signature = get_prediction_signature(classes_output_tensor_info, jpegs,
                                                     scores_output_tensor_info)
+    prediction_signature2 = get_prediction_signature2(jpegs, endpoints)
+
     signature_def_map = {'predict_images': prediction_signature,
-                         signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: classification_signature, }
+                         'predict_images2': prediction_signature2,
+                         signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: classification_signature,
+                         }
     return signature_def_map
 
 
@@ -153,6 +157,18 @@ def get_prediction_signature(classes_output_tensor_info, jpegs, scores_output_te
         outputs={
             'classes': classes_output_tensor_info,
             'scores': scores_output_tensor_info
+        },
+        method_name=signature_constants.PREDICT_METHOD_NAME)
+    return prediction_signature
+
+
+def get_prediction_signature2(jpegs, endpoints):
+    predict_inputs_tensor_info = utils.build_tensor_info(jpegs)
+    prediction_signature = signature_def_utils.build_signature_def(
+        inputs={'images': predict_inputs_tensor_info},
+        outputs={
+            'res1': utils.build_tensor_info(endpoints['conv0']),
+            'res2': utils.build_tensor_info(endpoints['mixed_8x8x2048b']),
         },
         method_name=signature_constants.PREDICT_METHOD_NAME)
     return prediction_signature
