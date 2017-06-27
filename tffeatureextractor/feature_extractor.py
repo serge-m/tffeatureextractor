@@ -9,16 +9,24 @@ import numpy as np
 
 from kolasimagesearch.impl.feature_engine.feature_extractor import FeatureExtractor, Descriptor
 from kolasimagestorage.image_encoder import ImageEncoder
+from collections import namedtuple
 
+ServerSettings = namedtuple("ServerSettings", ["timeout_in_seconds", "model_name", "signature_name", "inputs_name", "outputs_name"])
 
-class TensorflowProxy(object):
+DEFAULT_SETTINGS = ServerSettings(timeout_in_seconds=10.0, model_name="inception", signature_name="predict_images2", inputs_name="images", outputs_name="res2")
+
+class TensorflowProxy:
+    def __init__(self, server_url_with_port: str, server_settings: ServerSettings):
+        self._tf_connection = TFConnection(server_url_with_port, server_settings)
+
     def get_desctiptor(self, image_encoded):
-        return Descriptor([0])
+        vector = self._tf_connection.predict(image_encoded)
+        return Descriptor(vector)
 
 
 class TFFeatureExtractor(FeatureExtractor):
-    def __init__(self, *args, **kwargs):
-        self.tensorflow_proxy = TensorflowProxy()
+    def __init__(self, server_url_with_port, *args, **kwargs):
+        self.tensorflow_proxy = TensorflowProxy(server_url_with_port, server_settings=DEFAULT_SETTINGS)
         self.image_encoder = ImageEncoder(image_format="jpeg")
 
     def calculate(self, image: np.ndarray) -> Descriptor:
@@ -28,25 +36,25 @@ class TFFeatureExtractor(FeatureExtractor):
 
 
 class TFConnection:
-    def __init__(self, server_url_with_port="localhost:9000"):
+    def __init__(self, server_url_with_port: str, server_settings: ServerSettings):
         host, port = server_url_with_port.split(':')
         channel = implementations.insecure_channel(host, int(port))
         self.stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
-        self.timeout = 10.0
+        self.server_settings = server_settings
+
+    def _prepare_request(self, bin_image: bytes):
+        request = predict_pb2.PredictRequest()
+        request.model_spec.name = self.server_settings.model_name
+        request.model_spec.signature_name = self.server_settings.signature_name
+        proto = tf.contrib.util.make_tensor_proto(bin_image, shape=[1])
+        request.inputs[self.server_settings.inputs_name].CopyFrom(proto)
+        return request
 
     def predict(self, bin_image):
-        request = predict_pb2.PredictRequest()
-        request.model_spec.name = 'inception'
-        request.model_spec.signature_name = 'predict_images2'
-        request.inputs['images'].CopyFrom(tf.contrib.util.make_tensor_proto(bin_image, shape=[1]))
-        response = self.stub.Predict(request, self.timeout)
+        request = self._prepare_request(bin_image)
+        response = self.stub.Predict(request, self.server_settings.timeout_in_seconds)
 
-        res1 = tf.contrib.util.make_ndarray(response.outputs["res1"])
-        res2 = tf.contrib.util.make_ndarray(response.outputs["res2"])
-
-        print(res1.shape, res2.shape)
-
-        return response
+        return tf.contrib.util.make_ndarray(response.outputs[self.server_settings.outputs_name])
 
 
 def main():
@@ -54,7 +62,7 @@ def main():
     with open(path_image, 'rb') as f:
         data = f.read()
 
-    tf_connection = TFConnection()
+    tf_connection = TFConnection("localhost:9000", DEFAULT_SETTINGS)
     print(tf_connection.predict(data))
 
 
