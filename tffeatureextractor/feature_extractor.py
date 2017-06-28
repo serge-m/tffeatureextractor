@@ -11,17 +11,11 @@ from kolasimagesearch.impl.feature_engine.feature_extractor import FeatureExtrac
 from kolasimagestorage.image_encoder import ImageEncoder
 from collections import namedtuple
 
-ServerSettings = namedtuple("ServerSettings", ["timeout_in_seconds", "model_name", "signature_name", "inputs_name", "outputs_name"])
+ServerSettings = namedtuple("ServerSettings",
+                            ["timeout_in_seconds", "model_name", "signature_name", "inputs_name", "outputs_name"])
 
-DEFAULT_SETTINGS = ServerSettings(timeout_in_seconds=10.0, model_name="inception", signature_name="predict_images2", inputs_name="images", outputs_name="res2")
-
-class TensorflowProxy:
-    def __init__(self, server_url_with_port: str, server_settings: ServerSettings):
-        self._tf_connection = TFConnection(server_url_with_port, server_settings)
-
-    def get_desctiptor(self, image_encoded):
-        vector = self._tf_connection.predict(image_encoded)
-        return Descriptor(vector)
+DEFAULT_SETTINGS = ServerSettings(timeout_in_seconds=10.0, model_name="inception", signature_name="predict_images2",
+                                  inputs_name="images", outputs_name="res2")
 
 
 class TFFeatureExtractor(FeatureExtractor):
@@ -31,8 +25,17 @@ class TFFeatureExtractor(FeatureExtractor):
 
     def calculate(self, image: np.ndarray) -> Descriptor:
         image_encoded = self.image_encoder.numpy_to_binary(image)
-        feature_vector = self.tensorflow_proxy.get_desctiptor(image_encoded)
+        feature_vector = self.tensorflow_proxy.get_descriptor(image_encoded)
         return Descriptor(feature_vector)
+
+
+class TensorflowProxy:
+    def __init__(self, server_url_with_port: str, server_settings: ServerSettings):
+        self._tf_connection = TFConnection(server_url_with_port, server_settings)
+
+    def get_descriptor(self, image_encoded: bytes) -> Descriptor:
+        vector = self._tf_connection.predict(image_encoded)
+        return Descriptor(vector)
 
 
 class TFConnection:
@@ -50,7 +53,7 @@ class TFConnection:
         request.inputs[self.server_settings.inputs_name].CopyFrom(proto)
         return request
 
-    def predict(self, bin_image):
+    def predict(self, bin_image: bytes) -> np.ndarray:
         request = self._prepare_request(bin_image)
         response = self.stub.Predict(request, self.server_settings.timeout_in_seconds)
 
