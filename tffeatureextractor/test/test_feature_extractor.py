@@ -1,7 +1,8 @@
 import numpy as np
-from mock import patch
+from unittest import mock
 
-from feature_extractor import TFFeatureExtractor, Descriptor, DEFAULT_SETTINGS, TensorflowProxy, ServerSettings
+from tffeatureextractor.feature_extractor import TFFeatureExtractor
+from tffeatureextractor.feature_extractor import Descriptor, DEFAULT_SETTINGS, TensorflowProxy, ServerSettings
 
 port = 232323
 url_with_port = "http://url:{}".format(port)
@@ -11,8 +12,8 @@ feature_vector = np.arange(200).reshape([2, 100])
 
 
 class TestTFFeatureExtractor:
-    @patch("feature_extractor.TensorflowProxy")
-    @patch("feature_extractor.ImageEncoder")
+    @mock.patch("tffeatureextractor.feature_extractor.TensorflowProxy")
+    @mock.patch("tffeatureextractor.feature_extractor.ImageEncoder")
     def test_calculate(self, image_encoder, tensorflow_proxy):
         expected_vector = np.arange(100)
         tensorflow_proxy.return_value.get_descriptor.return_value = expected_vector
@@ -30,7 +31,7 @@ class TestTFFeatureExtractor:
 class TestTensorflowProxy:
     settings = ServerSettings(None, None, None, None, "123123")
 
-    @patch("feature_extractor.TFConnection")
+    @mock.patch("tffeatureextractor.feature_extractor.TFConnection")
     def test_get_descriptor(self, tf_connection):
         tf_connection.return_value.predict.return_value = feature_vector
 

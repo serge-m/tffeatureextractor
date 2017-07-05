@@ -7,7 +7,7 @@ from tensorflow_serving.apis import predict_pb2, prediction_service_pb2
 
 import numpy as np
 
-from kolasimagesearch.impl.feature_engine.feature_extractor import FeatureExtractor, Descriptor
+from kolasimagecommon import FeatureExtractor, Descriptor
 from kolasimagestorage.image_encoder import ImageEncoder
 from collections import namedtuple
 
@@ -40,8 +40,7 @@ class TensorflowProxy:
 
 class TFConnection:
     def __init__(self, server_url_with_port: str, server_settings: ServerSettings):
-        host, port = server_url_with_port.split(':')
-        channel = implementations.insecure_channel(host, int(port))
+        channel = implementations.insecure_channel(server_url_with_port, None)
         self.stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
         self.server_settings = server_settings
 
