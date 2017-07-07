@@ -3,7 +3,7 @@ from __future__ import print_function
 from grpc.beta import implementations
 import tensorflow as tf
 
-from tensorflow_serving.apis import predict_pb2, prediction_service_pb2
+from tffeatureextractor.tensorflow_serving.apis import predict_pb2, prediction_service_pb2
 
 import numpy as np
 
