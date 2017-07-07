@@ -1,3 +1,3 @@
 #!/bin/sh
 
-PYTHONPATH=".:./tffeatureextractor/" pytest tffeatureextractor/ tffeatureextractor/
+pytest tffeatureextractor/ tffeatureextractor/
