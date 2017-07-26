@@ -28,8 +28,7 @@ class TFFeatureExtractor(FeatureExtractor):
 
     def calculate(self, image: np.ndarray) -> Descriptor:
         image_encoded = self.image_encoder.numpy_to_binary(image)
-        feature_vector = self.tensorflow_proxy.get_descriptor(image_encoded)
-        return Descriptor(feature_vector)
+        return self.tensorflow_proxy.get_descriptor(image_encoded)
 
 
 class TensorflowProxy:
