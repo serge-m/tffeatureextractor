@@ -10,6 +10,7 @@ import numpy as np
 from kolasimagecommon import FeatureExtractor, Descriptor
 from kolasimagestorage.image_encoder import ImageEncoder
 from collections import namedtuple
+import logging
 
 ServerSettings = namedtuple("ServerSettings",
                             ["timeout_in_seconds", "model_name", "signature_name", "inputs_name", "outputs_name"])
@@ -20,6 +21,8 @@ DEFAULT_SETTINGS = ServerSettings(timeout_in_seconds=10.0, model_name="inception
 
 class TFFeatureExtractor(FeatureExtractor):
     def __init__(self, server_url_with_port, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        logger.info("Init TFFeatureExtractor with server_url_with_port {}".format(server_url_with_port))
         self.tensorflow_proxy = TensorflowProxy(server_url_with_port, server_settings=DEFAULT_SETTINGS)
         self.image_encoder = ImageEncoder(image_format="jpeg")
 
@@ -31,6 +34,9 @@ class TFFeatureExtractor(FeatureExtractor):
 
 class TensorflowProxy:
     def __init__(self, server_url_with_port: str, server_settings: ServerSettings):
+        logger = logging.getLogger(__name__)
+        logger.info("Init TensorflowProxy "
+                    "with server_url_with_port {}, server_settings {}".format(server_url_with_port, server_settings))
         self._tf_connection = TFConnection(server_url_with_port, server_settings)
 
     def get_descriptor(self, image_encoded: bytes) -> Descriptor:
