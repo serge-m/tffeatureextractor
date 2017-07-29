@@ -11,6 +11,7 @@ from kolasimagecommon import FeatureExtractor, Descriptor
 from kolasimagestorage.image_encoder import ImageEncoder
 from collections import namedtuple
 import logging
+from typing import Iterable
 
 ServerSettings = namedtuple("ServerSettings",
                             ["timeout_in_seconds", "model_name", "signature_name", "inputs_name", "outputs_name"])
@@ -29,6 +30,9 @@ class TFFeatureExtractor(FeatureExtractor):
     def calculate(self, image: np.ndarray) -> Descriptor:
         image_encoded = self.image_encoder.numpy_to_binary(image)
         return self.tensorflow_proxy.get_descriptor(image_encoded)
+
+    def descriptor_shape(self) -> Iterable[int]:
+        return 1, 8, 8, 2048
 
 
 class TensorflowProxy:
