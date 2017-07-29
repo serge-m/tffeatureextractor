@@ -19,6 +19,8 @@ ServerSettings = namedtuple("ServerSettings",
 DEFAULT_SETTINGS = ServerSettings(timeout_in_seconds=10.0, model_name="inception", signature_name="predict_images2",
                                   inputs_name="images", outputs_name="res2")
 
+sieve_step = 16
+
 
 class TFFeatureExtractor(FeatureExtractor):
     def __init__(self, server_url_with_port, *args, **kwargs):
@@ -32,7 +34,7 @@ class TFFeatureExtractor(FeatureExtractor):
         return self.tensorflow_proxy.get_descriptor(image_encoded)
 
     def descriptor_shape(self) -> Iterable[int]:
-        return 1, 8, 8, 2048
+        return 1, 8, 8, 2048 // sieve_step
 
 
 class TensorflowProxy:
@@ -44,7 +46,7 @@ class TensorflowProxy:
 
     def get_descriptor(self, image_encoded: bytes) -> Descriptor:
         vector = self._tf_connection.predict(image_encoded)
-        return Descriptor(vector)
+        return Descriptor(vector[:, :, :, ::sieve_step])
 
 
 class TFConnection:
